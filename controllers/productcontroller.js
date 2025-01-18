@@ -1,6 +1,7 @@
 const productSchema = require('../models/product');
 const categorySchema = require('../models/category');
 const variantSchema = require('../models/variantSchema')
+const vendorSchema = require('../models/vendorregistration');
 const mongoose = require('mongoose');
 
 const addProduct = async (req, res) => {
@@ -552,6 +553,81 @@ const searchHightoLow = async (req, res) => {
       });
     }
   };
+
+
+
+  
+
+  
+  const locationBasedProducts = async (req, res) => {
+    try {
+      const { longitude, latitude } = req.body;
+
+      if (!longitude || !latitude) {
+        return res.status(400).json({
+          message: "Latitude and longitude are required",
+          success: false,
+          error: true,
+        });
+      }
+  
+      const userLocation = [ latitude,longitude];
+
+      console.log("userlocation...:", userLocation);
+  
+
+      const nearbyVendors = await vendorSchema.find({
+        location: {
+          $near: {
+            $geometry: {
+              type: "Point",
+              coordinates: userLocation,
+            },
+            $maxDistance: 2000, 
+          },
+        },
+      }).select("_id company_name location");
+  
+      console.log("Nearby vendors found:", nearbyVendors);
+  
+      // If no vendors found
+      if (!nearbyVendors.length) {
+        return res.status(404).json({
+          message: "No vendors found within 2km radius",
+          success: true,
+          error: false,
+          products: [],
+        });
+      }
+  
+      const vendorIds = nearbyVendors.map(vendor => vendor._id);
+  
+      const products = await productSchema.find({
+        companyId: { $in: vendorIds },
+        isActive: true,
+      }).populate("companyId");
+  
+      console.log("Products found:", products);
+  
+      // Return the products
+      return res.status(200).json({
+        message: "Products found successfully",
+        success: true,
+        error: false,
+        products,
+      });
+    } catch (error) {
+      console.error("Error fetching location-based products:", error);
+
+      return res.status(500).json({
+        message: "Internal server error",
+        success: false,
+        error: true,
+      });
+    }
+  };
+  
+  
   
 
 
@@ -561,5 +637,5 @@ const searchHightoLow = async (req, res) => {
 
 
 module.exports = { addProduct ,viewproducts, deleteProduct,updateProducts,deleteVarint, updateVarint,viewSingleProduct,
-    searchProductResult,searchLowtoHigh,searchHightoLow,viewVendorProduct
+    searchProductResult,searchLowtoHigh,searchHightoLow,viewVendorProduct, locationBasedProducts
 }

@@ -56,6 +56,7 @@ const vendorRegistration = new Schema ({
 }, {timestamps: true })
 
 
+
 vendorRegistration.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('vendor',vendorRegistration)

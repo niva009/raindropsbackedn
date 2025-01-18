@@ -4,7 +4,7 @@
     const {deleteProduct} =require('../controllers/productcontroller')
     const {updateProducts} =require('../controllers/productcontroller')
     const {deleteVarint} =require('../controllers/productcontroller')
-    const {updateVarint,viewSingleProduct,searchProductResult,searchLowtoHigh,searchHightoLow,viewVendorProduct} =require('../controllers/productcontroller')
+    const {updateVarint,viewSingleProduct,searchProductResult,searchLowtoHigh,searchHightoLow,viewVendorProduct,locationBasedProducts} =require('../controllers/productcontroller')
     const productRouter = express.Router();
     const upload = require('../middleware/upload');
     const authenticateToken = require('../middleware/auth');
@@ -21,5 +21,6 @@
     productRouter.get('/search',searchProductResult);
     productRouter.get('/products/low-to-high',searchLowtoHigh);
     productRouter.get('/products/high-to-low',searchHightoLow);
+    productRouter.get('/location-products', authenticateToken, locationBasedProducts);
 
     module.exports = productRouter;

@@ -42,10 +42,9 @@ const productSchema = new Schema({
         required: true,
     },
     companyId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'vendor',
         required: true,
-        unique: true,
-        sparse: true,
     },
     categoryname: {
         type: String,

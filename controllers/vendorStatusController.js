@@ -10,7 +10,7 @@ const vendorStatusUpdation = async (req, res) => {
       return res.status(400).json({
         message: "Vendor ID not found.",
         success: false,
-        error: true,
+        error: true,  
       });
     }
 

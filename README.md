@@ -41,7 +41,7 @@ Clone the repository to your local machine:
 
 bash
 Copy code
-git clone https://github.com/yourusername/raindrops-backend.git
+git clone https://github.com/niva009/raindrops-backend.git
 cd raindrops-backend
 2. Install Dependencies
 Install the necessary dependencies:

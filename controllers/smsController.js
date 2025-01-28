@@ -63,6 +63,8 @@ const sendOtp = async (req, res) => {
 const verifyOtp = async (req, res) => {
     try {
       const { phone_number, otp } = req.body;
+
+      console.log("phone and otp", phone_number, otp);
   
       if (!phone_number || !otp) {
         return res.status(400).json({
@@ -74,6 +76,8 @@ const verifyOtp = async (req, res) => {
   
 
       const storedOtp = await otpSchema.findOne({ phone_number });
+
+      console.log("storesd otp", storedOtp);
   
       if (!storedOtp || storedOtp.otp !== otp) {
         return res.status(400).json({

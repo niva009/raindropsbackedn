@@ -195,20 +195,37 @@ const addProduct = async (req, res) => {
 };
 
 
-const viewproducts = async(req,res) =>{
-
-    try{
-        const products = await productSchema.find()
-
-        if(products){
-             return  res.status(200).json({ message:"product data",data:products,success:true,error:false});
-        }
-        return  res.status(400).json({message:"products not found"});
+const viewProducts = async (req, res) => {
+    try {
+      // Fetch all products and populate the 'companyId' field
+      const products = await productSchema.find().populate("companyId");
+  
+      if (!products || products.length === 0) {
+        // Handle the case where no products are found
+        return res.status(404).json({
+          message: "Products not found",
+          success: false,
+          error: false,
+        });
+      }
+  
+      // Return the products data with a 200 status code
+      return res.status(200).json({
+        message: "Product data retrieved successfully",
+        data: products,
+        success: true,
+        error: false,
+      });
+    } catch (error) {
+      // Handle any unexpected errors
+      return res.status(500).json({
+        message: "An error occurred while fetching products",
+        success: false,
+        error: error.message,
+      });
     }
-    catch(error){
-         return res.status(500).json({message:"error",success:false,error:error.message});
-    }
-}
+  };
+  
 
 
 const viewVendorProduct = async(req, res) =>{
@@ -563,6 +580,8 @@ const searchHightoLow = async (req, res) => {
     try {
       const { longitude, latitude } = req.body;
 
+      console.log("latttt", latitude, longitude);
+
       if (!longitude || !latitude) {
         return res.status(400).json({
           message: "Latitude and longitude are required",
@@ -583,7 +602,7 @@ const searchHightoLow = async (req, res) => {
               type: "Point",
               coordinates: userLocation,
             },
-            $maxDistance: 2000, 
+            $maxDistance: 5000, 
           },
         },
       }).select("_id company_name location");
@@ -626,6 +645,54 @@ const searchHightoLow = async (req, res) => {
       });
     }
   };
+
+  const locationbasedVendor = async(req, res) =>{
+
+    try {
+
+        const { latitude, longitude} = req.body;
+        console.log("latitude and longitude..:", latitude, longitude);
+        const userLocation = [ latitude, longitude];
+
+        const nearbyVendors = await vendorSchema.find({
+            location: {
+              $near: {
+                $geometry: {
+                  type: "Point",
+                  coordinates: userLocation,
+                },
+                $maxDistance: 5000, 
+              },
+            },
+          }).select("_id company_name location address image");
+
+
+          if(!nearbyVendors){
+            return res.status(403).json({
+              message:"no shops found current location",
+              success: true,
+              error: false,
+            })
+          }
+
+          return res.status(200).json({
+            message:"shops found successfully",
+            success: true,
+            error: false,
+            data: nearbyVendors,
+          })
+    }
+    catch(error){
+
+      console.log("error location vendorsss", error);
+      return res.status(500).json({
+        message:"internal server errror",
+        success: true,
+         error: error,
+      })
+
+    }
+  }
   
   
   
@@ -636,6 +703,6 @@ const searchHightoLow = async (req, res) => {
 
 
 
-module.exports = { addProduct ,viewproducts, deleteProduct,updateProducts,deleteVarint, updateVarint,viewSingleProduct,
-    searchProductResult,searchLowtoHigh,searchHightoLow,viewVendorProduct, locationBasedProducts
+module.exports = { addProduct ,viewProducts, deleteProduct,updateProducts,deleteVarint, updateVarint,viewSingleProduct,
+    searchProductResult,searchLowtoHigh,searchHightoLow,viewVendorProduct, locationBasedProducts, locationbasedVendor
 }

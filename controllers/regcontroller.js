@@ -2,6 +2,10 @@ const userSchema = require("../models/userregistration");
 const loginSchema = require("../models/login")
 const bcrypt = require("bcrypt");
 const VendorSchema = require('../models/vendorregistration')
+const nodemailer = require("nodemailer");
+const jwt = require('jsonwebtoken'); 
+require("dotenv").config();
+
 
 
 
@@ -52,6 +56,126 @@ const getUser = async (req, res) => {
 };
 
 
+
+
+const transporter = nodemailer.createTransport({
+
+  service: 'gmail',
+  auth:{
+    user : "raindropsindian@gmail.com",
+    pass: 'subl nxvh muzn xwhk',
+  },
+
+
+})
+
+const resetPassword = async (req, res) => {
+  try {
+    console.log("Reset password request received.");
+
+    const { email } = req.body;
+    console.log("Email provided:", email);
+
+    const checkEmailValidation = await userSchema.findOne({ email });
+    if (!checkEmailValidation) {
+      console.log("Email not found in database.");
+      return res.status(403).json({
+        message: "Email does not exist",
+        success: false,
+        error: true,
+      });
+    }
+
+    console.log("Email found in database:", checkEmailValidation);
+
+    const token = jwt.sign(
+      { userId: checkEmailValidation._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+    console.log("Generated JWT token:", token);
+
+    const resetUrl = `${process.env.FRONTEND_URL}/authentication/${token}/reset-password`;
+    console.log("Generated reset URL:", resetUrl);
+
+    const mailOptions = {
+      from: "raindropsindian@gmail.com",
+      to: email,
+      subject: "Password Reset Request",
+      text: `Click the following link to reset your password: ${resetUrl}`,
+    };
+
+    console.log("Sending email...");
+    const emailResponse = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully:", emailResponse);
+
+    return res.status(200).json({
+      message: "Password reset email sent successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error during password reset process:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+const verifyResetPassword = async(req, res) =>{
+
+  try {
+
+    const { token } = req.params;
+    const {password} = req.body;
+
+    console.log("token", token);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("decoded uer id...:", decoded.userId);
+
+    const user = await userSchema.findOne({_id:decoded.userId});
+
+
+    console.log("userrr", user);
+
+
+
+    if(!user){
+      return res.status(400).json({
+        message:"usernot found error",
+        success: false,
+        error: true,
+      })
+    }
+    const hashPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashPassword;
+    user.save();
+
+    return res.status(200).json({
+      message:"password reseted successfully",
+      succes: true,
+      error: false,
+    })
+
+  }catch(error){
+
+    console.log("verification error", error)
+
+    return res.status(500).json({
+      message:"internal server error updating password",error,
+      succes: false,
+      error: error,
+    })
+
+  }
+}
+
+
+
+
+
+
 //////vendors registration///////////////////
 
 
@@ -73,6 +197,10 @@ const vendorRegistration = async (req, res) => {
       latitude,
       longitude,
     } = req.body;
+
+    const image = req.file ? `${req.file.filename}` : undefined;
+    console.log('Uploaded File:', req.file);
+
 
     console.log("Vendor Data:", req.body);
 
@@ -132,6 +260,7 @@ const vendorRegistration = async (req, res) => {
       password: hashedPassword,
       paymentOption,
       isActive,
+      image,
       location: {
         type: "Point", // Set GeoJSON type
         coordinates: [longitude, latitude], // Longitude first, then latitude
@@ -240,7 +369,7 @@ const VendorLocationUpdate = async( req, res) =>{
         $set: {
           location: {
             type: "Point",
-            coordinates: [longitude, latitude], 
+            coordinates: [latitude, longitude], 
           },
         },
       },
@@ -269,4 +398,4 @@ const VendorLocationUpdate = async( req, res) =>{
 
 }
 
-module.exports = { getUser ,vendorRegistration,viewVendorName,VendorLocationUpdate};
+module.exports = { getUser ,vendorRegistration,viewVendorName,VendorLocationUpdate,resetPassword,verifyResetPassword};

@@ -16,6 +16,9 @@ const vendorRegistration = new Schema ({
     address:{
         type:String, required: true,
     },
+    image:{
+        type:String, required:false,
+    },
     pincode:{
         type:String, required:true,
     },

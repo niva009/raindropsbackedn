@@ -37,9 +37,11 @@ const productSchema = new Schema({
         required: true,
     },
     type: {
-        default: 'single',
+
         type: String,
         required: true,
+        default: "single",
+        enum: ["single", "combo"]
     },
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -69,7 +71,7 @@ const productSchema = new Schema({
         type: { 
             type: String, 
             required: true, 
-            enum: ['kg', 'liter', 'piece', "pack"]
+            enum: ['kg', 'liter', 'piece', "pack", "gram", "ml"]
         },
         value: { 
             type: String, 

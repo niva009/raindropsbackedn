@@ -17,7 +17,7 @@
     productRouter.put('/update-product/:id',upload.single('image'),authenticateToken,updateProducts)
     productRouter.delete('/product/varaint/:id', authenticateToken,deleteVarint);
     productRouter.put('/product/updatevariant/:id',authenticateToken,updateVarint);
-    productRouter.get('/product/:id',authenticateToken,viewSingleProduct);
+    productRouter.get('/product/:id',viewSingleProduct);
     productRouter.get('/search',searchProductResult);
     productRouter.get('/products/low-to-high',searchLowtoHigh);
     productRouter.get('/products/high-to-low',searchHightoLow);

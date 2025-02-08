@@ -14,6 +14,11 @@ const sendOtp = async (req, res) => {
   try {
     const { phone_number } = req.body;
 
+    console.log("TWILIO_ACCOUNT_SID:", process.env.TWILIO_ACCOUNT_SID);
+console.log("TWILIO_AUTH_TOKEN:", process.env.TWILIO_AUTH_TOKEN ? "Exists" : "Missing");
+console.log("TWILIO_PHONE_NUMBER:", process.env.TWILIO_PHONE_NUMBER);
+
+
     console.log("phone number ..:", phone_number);
 
     if (!phone_number) {

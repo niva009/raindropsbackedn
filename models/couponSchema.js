@@ -22,9 +22,9 @@ const couponSchema = new Schema({
     type: String,
     required: false
 },
-expireDate:{
-    type:Date,
-    required: false,
+company_Id:{
+    type: Schema.Types.ObjectId,
+    ref: 'vendor',
 },
 isActive:{
     type: Boolean,

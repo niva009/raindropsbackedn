@@ -6,11 +6,8 @@ const variantSchema = require('../models/variantSchema');
 const addtoCart = async (req, res) => {
     try {
         const { userId } = req.user; 
-        console.log("User ID:", userId);
 
         const { productId,  quantity } = req.body; 
-
-        console.log("quantity ...:", quantity);
 
         if (!productId || !quantity) {
             return res.status(400).json({ 
@@ -144,6 +141,9 @@ const deleteCart = async( req, res) =>{
     try {
         const id = req.params.id;
 
+
+        console.log("delete product id", id);
+
         if(!id){
             return res.status(400).json({
                 message:"id not found",
@@ -152,7 +152,9 @@ const deleteCart = async( req, res) =>{
             })
         }
 
-        const cartdeleteProudct = await cartSchema.findByIdAndDelete({_id:id})
+        const cartdeleteProudct = await cartSchema.findOneAndDelete({productId:id})
+
+        console.log("cartDeltedata", cartdeleteProudct);
 
         if(!cartdeleteProudct){
             return res.status(400).json({
@@ -163,6 +165,7 @@ const deleteCart = async( req, res) =>{
         }
         res.status(200).json({
             message:"successfully deleted from cart",
+            data:cartdeleteProudct,
             success: true,
             error: false,
         })
@@ -259,7 +262,7 @@ const cartIncrement = async ( req, res) =>{
         const { userId } = req.user; 
         const { productId} = req.body;
 
-    console.log(`userid and productid..:,${userId},${productId}`);
+    console.log(`increment  and dicrement`, req.body);
 
  if(!productId || !userId){
     return res.status(401).json({
@@ -290,7 +293,7 @@ if (!cartProduct) {
         error: true,
     });
 }
-    return res.status(200).json({message:"cart incremented successfully", success:true, error: false})
+    return res.status(200).json({message:"cart incremented successfully", data: cartProduct, success:true, error: false})
 
  }catch(error){
     console.error("Error incrementing cart item:", error); 
@@ -304,6 +307,8 @@ if (!cartProduct) {
 
         const { userId } = req.user; 
         const { productId} = req.body;
+
+        console.log("cartdicremrnt", req.body);
 
 
  if(!productId || !userId){

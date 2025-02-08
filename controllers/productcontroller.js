@@ -25,17 +25,16 @@ const addProduct = async (req, res) => {
 
         console.log("Name, price, category:", name, price, category);
 
-        // Validate required fields
         if (!name || !price || !category) {
             return res.status(400).json({ message: "Please fill all the required fields." });
         }
 
-        // Generate slug dynamically based on the name
+   
         const slug = name
             .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, "") // Remove invalid characters
+            .replace(/[^a-z0-9\s-]/g, "") 
             .trim()
-            .replace(/\s+/g, "-"); // Replace spaces with hyphens
+            .replace(/\s+/g, "-"); 
 
         // Ensure the slug is unique
         const slugPrevious = await productSchema.findOne({ slug: slug });
@@ -79,7 +78,7 @@ const addProduct = async (req, res) => {
         }
 
         // Validate product attribute type
-        if (!["kg", "liter", "piece", "pack"].includes(parsedProductAttribute.type)) {
+        if (!["kg", "liter", "piece", "pack", "gram", "ml"].includes(parsedProductAttribute.type)) {
             return res.status(400).json({
                 message: "Invalid product attribute type. Valid types are: kg, liter, piece, pack.",
             });
@@ -446,20 +445,20 @@ const updateVarint = async ( req, res) =>{
 
 const viewSingleProduct = async (req, res) => {
     try {
-        // Get the slug from the request params
-        const { id: slug } = req.params;
 
-        // Check if slug is missing
-        if (!slug) {
+        const { id } = req.params;
+
+
+        if (!id) {
             return res.status(404).json({
-                message: "Product slug not found",
+                message: "Product  not found",
                 success: false,
                 error: true,
             });
         }
 
         // Find the product using the slug
-        const viewProduct = await productSchema.findOne({ slug });
+        const viewProduct = await productSchema.findOne({ _id:id });
 
         // Check if product exists
         if (!viewProduct) {
@@ -470,7 +469,6 @@ const viewSingleProduct = async (req, res) => {
             });
         }
 
-        // Return product data if found
         return res.status(200).json({
             message: "Product found successfully",
             data: viewProduct,
@@ -478,11 +476,10 @@ const viewSingleProduct = async (req, res) => {
             error: false,
         });
     } catch (error) {
-        // Catch any errors and send a generic error response
         console.log("View single product error", error);
         return res.status(500).json({
             message: "Internal server error",
-            success: false,  // Corrected typo from 'fasle'
+            success: false, 
             error: error,
         });
     }

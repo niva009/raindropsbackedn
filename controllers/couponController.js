@@ -6,10 +6,11 @@ const cartproducts = require('../models/cartSchema');
 const addCouponCode = async(req, res) =>{
 
     try {
-         
-        const { couponCode, discountType, description, isActive, expireDate, couponNumbers, cartAmount} = req.body;
+        const { userId } = req.user; 
+        const { couponCode, discountType, description, isActive, couponNumbers, cartAmount} = req.body;
 
-        console.log(req.body);
+        console.log("couponcodeeee",req.body);
+        console.log(req.header);
 
         const duplicatecouponCode = await couponSchema.findOne({couponCode: couponCode})
 
@@ -37,9 +38,9 @@ const addCouponCode = async(req, res) =>{
             discountType,
             description,
             isActive,
-            expireDate,
             cartAmount,
-            couponNumbers
+            couponNumbers,
+            company_Id: userId,
         })
 
         await couponData.save();
@@ -73,7 +74,10 @@ const viewCoupon = async( req, res) =>{
 
     try {
 
-  const couponDatas = await couponSchema.find();
+        const id = req.params.id;
+
+        console.log("reqid", id);
+  const couponDatas = await couponSchema.find({company_Id:id});
 
   if(!couponDatas){
     return res.status(400).json({
@@ -124,7 +128,8 @@ const deleteCoupon = async( req, res) =>{
         return res.status(200).json({
             message:"coupon deleted successfully",
             success: true,
-            error: false
+            error: false,
+            data:deleteCoupon,
         })
     }catch(error){
        console.log("errror..:", error);
@@ -188,18 +193,30 @@ const couponValidation = async (req, res) => {
     try {
         const { couponCode, userId } = req.body;
 
+        const usedCoupon = await activatedCoupon.findOne({couponCode:couponCode, userId: userId})
+
+        if(usedCoupon){
+            return res.status(400).json({
+                message:"coupon already used",
+                success: false,
+                error: true,
+            })
+        }
+
+        console.log("Coupon code data:", req.body);
+
         if (!couponCode || !userId) {
             return res.status(400).json({
-                message: "Coupon code and user ID are required",
+                message: "Coupon code is required",
                 success: false,
                 error: true,
             });
         }
 
-
+        // Fetch the coupon details
         const checkCoupon = await couponSchema.findOne({ couponCode: couponCode });
 
-        console.log("coupon information ", checkCoupon);
+        console.log("Coupon information:", checkCoupon);
 
         if (!checkCoupon) {
             return res.status(404).json({
@@ -217,6 +234,7 @@ const couponValidation = async (req, res) => {
             });
         }
 
+        // Fetch user's cart data
         const allCartData = await cartproducts.find({ userId: userId });
         console.log("User cart data:", allCartData);
 
@@ -228,57 +246,58 @@ const couponValidation = async (req, res) => {
             });
         }
 
+        // Calculate total cart amount
+        let totalPrice = allCartData.reduce((acc, product) => acc + (product.sale_price * product.quantity), 0);
+        console.log("Original Cart Total Price:", totalPrice);
 
-        let totalPrice = 0;
-        allCartData.forEach(product => {
-            const totalProductPrice = product.sale_price * product.quantity;
-            totalPrice += totalProductPrice;
-        });
-
-    
-
-        let cartAmount = totalPrice;
-
-        console.log("Cart amount:", cartAmount);
-
-        if (cartAmount >= checkCoupon.cartAmount) {
-
-            const appliedCouponData = new activatedCoupon({
-                couponCode: couponCode,
-                userId: userId,
-            });
-
-            await appliedCouponData.save();
-
-
-            checkCoupon.couponNumbers -= 1;
-            await checkCoupon.save();
-
-            return res.status(200).json({
-                message: "Coupon code applied successfully",
-                success: true,
-                error: false,
+        if (totalPrice < checkCoupon.cartAmount) {
+            const differenceAmount = checkCoupon.cartAmount - totalPrice;
+            return res.status(400).json({
+                message: `Add ${differenceAmount} more to apply the coupon offer`,
+                success: false,
+                error: true,
             });
         }
 
+        let discountAmount = 0;
 
-        const differenceAmount = checkCoupon.cartAmount - cartAmount;
+        if (checkCoupon.discountType?.type === "percentage") {
+            discountAmount = (totalPrice * checkCoupon.discountType.value) / 100;
+        } else if (checkCoupon.discountType?.type === "fixed") {
+            discountAmount = checkCoupon.discountType.value;
+        }
 
-        return res.status(400).json({
-            message: `Add ${differenceAmount} more to apply the coupon offer`,
-            success: false,
-            error: true,
+        const newCartAmount = totalPrice - discountAmount;
+        console.log("New cart amount after discount:", newCartAmount);
+
+
+        const appliedCouponData = new activatedCoupon({
+            couponCode: couponCode,
+            userId: userId,
+        });
+        await appliedCouponData.save();
+
+        checkCoupon.couponNumbers -= 1;
+        await checkCoupon.save();
+
+        return res.status(200).json({
+            message: "Coupon code applied successfully",
+            success: true,
+            error: false,
+            newTotalPrice: newCartAmount,
+            discountAmount:discountAmount,
         });
 
     } catch (error) {
-        console.log("coupon-validation-error", error);
+        console.error("Coupon validation error:", error);
         return res.status(500).json({
             message: "Network error",
             success: false,
             error: error,
         });
     }
-}
+};
+
 
 
 module.exports = {addCouponCode, viewCoupon, deleteCoupon, updateCoupon, couponValidation};

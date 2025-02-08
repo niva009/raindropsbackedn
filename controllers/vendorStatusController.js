@@ -1,6 +1,7 @@
 const productSchema = require("../models/product");
 const vendorSchema = require("../models/vendorregistration");
 
+
 const vendorStatusUpdation = async (req, res) => {
   try {
     const { userId } = req.user;
@@ -116,5 +117,78 @@ const vendorStatus = async (req, res) => {
   }
 };
 
+const vendorProducts = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-module.exports = { vendorStatusUpdation ,vendorStatus};
+    console.log("idd", id);
+
+    if (!id) {
+      return res.status(400).json({
+        message: "Shop ID not found",
+        success: false,
+        error: true,
+      });
+    }
+
+    // Fetch shop products and populate company details
+    const shopProducts = await productSchema
+      .find({ companyId: id })
+      .populate("companyId", "company_name address");
+
+    if (!shopProducts || shopProducts.length === 0) {
+      return res.status(404).json({
+        message: "Products are not available",
+        success: false,
+        error: true,
+      });
+    }
+
+    // Extract company details from the first product (since all belong to the same company)
+    const companyDetails = shopProducts[0]?.companyId || {};
+
+    // Transform data to include company details at the top level
+    const formattedResponse = {
+      message: "Shop products found successfully",
+      success: true,
+      error: false,
+      company_name: companyDetails.company_name || "N/A",
+      company_address: companyDetails.address || "N/A",
+      company_image: companyDetails.image || "",
+      company_phone: companyDetails.contact_number || "",
+      data: shopProducts.map(product => ({
+        _id: product._id,
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        sale_price: product.sale_price,
+        discount: product.discount,
+        description: product.description,
+        image: product.image,
+        category: product.category,
+        type: product.type,
+        categoryname: product.categoryname,
+        isActive: product.isActive,
+        isStatus: product.isStatus,
+        stock: product.stock,
+        variants: product.variants,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+        productAttribute: product.productAttribute
+      })),
+    };
+
+    return res.status(200).json(formattedResponse);
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false,
+      error: true,
+    });
+  }
+};
+
+
+
+module.exports = { vendorStatusUpdation ,vendorStatus, vendorProducts};

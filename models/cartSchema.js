@@ -64,7 +64,7 @@ const cartSchema = new Schema({
     },  updatedAt: { // Recommended to track updates explicitly
         type: Date,
         default: Date.now,
-    }
+    },
 })
 
 module.exports = mongoose.model("cartproducts", cartSchema);

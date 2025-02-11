@@ -271,6 +271,8 @@ const couponValidation = async (req, res) => {
         console.log("New cart amount after discount:", newCartAmount);
 
 
+
+
         const appliedCouponData = new activatedCoupon({
             couponCode: couponCode,
             userId: userId,
@@ -286,6 +288,8 @@ const couponValidation = async (req, res) => {
             error: false,
             newTotalPrice: newCartAmount,
             discountAmount:discountAmount,
+            couponMessage:`couponcode ${couponCode} aplied successfully`,
+            
         });
 
     } catch (error) {

@@ -5,15 +5,14 @@ const variantSchema = require('../models/variantSchema');
 
 const addtoCart = async (req, res) => {
     try {
-        const { userId } = req.user; 
-
-        const { productId,  quantity } = req.body; 
+        const { userId } = req.user;
+        const { productId, quantity } = req.body;
 
         if (!productId || !quantity) {
-            return res.status(400).json({ 
-                message: "Product ID and quantity are required", 
-                success: false, 
-                error: true 
+            return res.status(400).json({
+                message: "Product ID and quantity are required",
+                success: false,
+                error: true,
             });
         }
 
@@ -21,71 +20,34 @@ const addtoCart = async (req, res) => {
 
         let cartProduct = await productSchema.findOne({ _id: productId });
 
-        if (cartProduct) {
-            let productDuplicate = await cartSchema.findOne({ slug: cartProduct?.slug, userId: userId });
-            if (productDuplicate) {
-                return res.status(409).json({
-                    message: "Product already exists in cart",
-                    success: false,
-                    error: true,
-                });
-            } 
+        if (!cartProduct) {
+            cartProduct = await variantSchema.findOne({ _id: productId });
 
-            if(cartProduct && cartProduct.isActive === false){
-                return res.status(400).json({
-                    message:"product currently inactive",
-                    success: false,
-                    error: true,
-                })
-            }
-
-            if (quantity > parseInt(cartProduct?.stock)) {
-                return res.status(401).json({
-                    message: `Cart quantity must be less than or equal to stock ${cartProduct?.stock}`,
+            if (!cartProduct) {
+                return res.status(404).json({
+                    message: "Product or Variant not found",
                     success: false,
                     error: true,
                 });
             }
-
-            const saveCart = new cartSchema({
-                name: cartProduct.name,
-                sale_price: cartProduct.sale_price,
-                quantity: quantity,
-                productId:productId,
-                image: cartProduct.image || "",
-                companyId:cartProduct.companyId || "",
-                isActive: cartProduct.isActive || "", 
-                isStatus: cartProduct.isStatus || "",
-                category: cartProduct.category,
-                userId: userId,  // Attach userId from the JWT
-                categoryname: cartProduct.categoryname || "",
-                slug: cartProduct.slug || "",
-                stock: cartProduct.stock || 0,
-                discount:cartProduct.discount,
-            });
-
-            await saveCart.save();
-
-            return res.status(200).json({
-                message: "Product added to cart",
-                data: saveCart,
-                success: true,
-                error: false,
-            });
         }
 
-        let cartVariant = await variantSchema.findOne({ _id: productId });
 
-        if (!cartVariant) {
-            return res.status(404).json({
-                message: "Product or Variant not found",
-                success: false,
-                error: true,
-            });
+        let userCartItems = await cartSchema.find({ userId });
+
+        if (userCartItems.length > 0) {
+            const existingCompanyId = userCartItems[0].companyId.toString(); // Convert to string
+            if (existingCompanyId !== cartProduct.companyId.toString()) {
+                return res.status(405).json({
+                    message: `Your cart contains items from other shops. Would you like to reset your cart for adding items from this shop?`,
+                    success: false,
+                    error: true,
+                });
+            }
         }
 
-        let variantDuplicate = await cartSchema.findOne({ slug: cartVariant?.slug, userId: userId });
-        if (variantDuplicate) {
+        let productDuplicate = await cartSchema.findOne({ slug: cartProduct?.slug, userId });
+        if (productDuplicate) {
             return res.status(409).json({
                 message: "Product already exists in cart",
                 success: false,
@@ -93,41 +55,51 @@ const addtoCart = async (req, res) => {
             });
         }
 
-        if (quantity > parseInt(cartVariant?.stock)) {
-            return res.status(401).json({
-                message: "Cart quantity must be less than or equal to stock",
+        if (cartProduct.isActive === false) {
+            return res.status(400).json({
+                message: "Product is currently inactive",
                 success: false,
                 error: true,
             });
         }
 
-        console.log("Wishlist variant data:", cartVariant);
+        if (quantity > parseInt(cartProduct?.stock)) {
+            return res.status(401).json({
+                message: `Cart quantity must be less than or equal to stock (${cartProduct?.stock})`,
+                success: false,
+                error: true,
+            });
+        }
 
-        const saveCartVariant = new cartSchema({
-            name: cartVariant.name || "Unnamed Product",
-            sale_price: cartVariant.sale_price || 0,
-            image: cartVariant.image || "",
-            productId: productId,
-            userId: userId, // Attach userId from the JWT
-            category: cartVariant.category || "Unknown Category",
-            categoryname: cartVariant.categoryname || "Unknown Category Name",
-            slug: cartVariant.slug || "unknown-slug",
-            stock: cartVariant.stock || 0,
+        const saveCart = new cartSchema({
+            name: cartProduct.name,
+            sale_price: cartProduct.sale_price,
             quantity: quantity,
-            discount: cartVariant.discount,
+            productId: productId,
+            image: cartProduct.image || "",
+            companyId: cartProduct.companyId || "",
+            companyName: cartProduct.companyName || "",
+            isActive: cartProduct.isActive || "",
+            isStatus: cartProduct.isStatus || "",
+            category: cartProduct.category,
+            userId: userId,
+            categoryname: cartProduct.categoryname || "",
+            slug: cartProduct.slug || "",
+            stock: cartProduct.stock || 0,
+            discount: cartProduct.discount,
         });
 
-        await saveCartVariant.save();
+        await saveCart.save();
 
         return res.status(200).json({
-            message: "Variant added to cart",
-            data: saveCartVariant,
+            message: "Product added to cart",
+            data: saveCart,
             success: true,
             error: false,
         });
 
     } catch (error) {
-        console.error('Error adding to cart:', error); 
+        console.error("Error adding to cart:", error);
         return res.status(500).json({
             message: "Error adding to cart",
             error: error.message,
@@ -135,6 +107,7 @@ const addtoCart = async (req, res) => {
         });
     }
 };
+
 
 const deleteCart = async( req, res) =>{
     

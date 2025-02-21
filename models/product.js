@@ -48,6 +48,10 @@ const productSchema = new Schema({
         ref: 'vendor',
         required: true,
     },
+    companyName:{
+        type:String,
+        required: false,
+    },
     categoryname: {
         type: String,
         required: true,

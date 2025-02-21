@@ -18,6 +18,8 @@ const orderCreation = async (req, res) => {
         console.log("addressID", addressId);
         console.log("Payment-type", paymentType);
 
+        console.log("order information", req.body);
+
 
         if (!addressId || !paymentType) {
             return res.status(400).json({
@@ -73,7 +75,7 @@ const orderCreation = async (req, res) => {
                 payment_type: paymentType,
                 paymentId: null, 
                 addressId: addressId,
-                totalAmount: totalAmount,
+                totalAmount: totalAmount || 0,
             });
 
             await newOrder.save();
@@ -219,6 +221,8 @@ const verifyPayment = async (req, res) => {
 const userOrderHistory = async (req, res) => {
     try {
         const { userId } = req.user;
+
+        console.log("IDDDDDDDDD", req.body);
 
         console.log("useriD in order history", userId);
   
@@ -465,6 +469,49 @@ const orderUpdateAccepted = async (req, res) => {
   };
 
 
+
+  ///specifi order based on id///
+
+
+  const orderById = async(req, res) =>{
+
+    try {
+      const orderId = req.params.id;
+      if(!orderId){
+        return res.status(400).json({
+          message:"order id is required",
+          success:false,
+          error:true
+        })
+      }
+      const orderDetails = await orderSchema.findById(orderId);
+
+      if(orderDetails){
+        return res.status(200).json({
+          message:`order details foundsuccess ${orderId}`,
+          data: orderDetails,
+          success: true,
+          error: false,
+        })
+      }
+      else{
+        return res.status(404).json({
+          message:`order details not found ${orderId}`,
+          success:false,
+          error: true
+        })
+      }
+    }catch(error){
+      console.log("error orders", error);
+      return res.statu(500).json({
+        message:"internal server error",
+        success: false,
+        error: true,   
+      })
+    }
+  }
+
+
   ///////count specif order status deliverdddddd.......////
 
   const showVendorDeliveredOrders = async (req, res) => {
@@ -527,4 +574,4 @@ const orderUpdateAccepted = async (req, res) => {
   
 
 
-module.exports = { orderCreation ,verifyPayment, userOrderHistory,showVendorOrders,orderUpdateAccepted,orderUpdateDelivered,showVendorDeliveredOrders};
+module.exports = { orderCreation ,verifyPayment,orderById, userOrderHistory,showVendorOrders,orderUpdateAccepted,orderUpdateDelivered,showVendorDeliveredOrders};

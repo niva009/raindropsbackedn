@@ -37,6 +37,9 @@ const cartSchema = new Schema({
     companyId:{
         type:mongoose.Schema.Types.ObjectId, ref: "vendor", required: true,
     },
+    companyName:{
+        type: String,
+    },
     categoryname:{
         type: String,
         required: false,

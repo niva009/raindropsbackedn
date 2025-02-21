@@ -48,6 +48,12 @@ const addProduct = async (req, res) => {
             return res.status(400).json({ message: "Invalid category ID", success: false });
         }
 
+        const vendorName = await vendorSchema.findById(userId);
+
+        if(!vendorName){
+          return res.status(400).json({ messsage: "invalid compony id", success: false });
+        }
+
         // Validate price values
         if (parseFloat(price) <= 0 || parseFloat(sale_price) < 0) {
             return res.status(400).json({ message: "Invalid price or sale price values." });
@@ -96,6 +102,7 @@ const addProduct = async (req, res) => {
             type: type,
             stock: stock,
             companyId: userId,
+            companyName:vendorName.company_name,
             isActive: req.body.isActive !== undefined ? req.body.isActive : true,
             category: oldCategory._id,
             categoryname: oldCategory.name,
@@ -281,99 +288,113 @@ const deleteProduct = async(req, res) =>{
 }
 
 
-
 const updateProducts = async (req, res) => {
     try {
-      const id = req.params.id;
-  
-      if (!id) {
-        return res.status(400).json({ message: "ID not provided" });
-      }
-  
-      // Validate the ID
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid product ID" });
-      }
-  
-      console.log("Provided ID:", id);
-  
-      // Destructure all possible fields from req.body
-      const {
-        name,
-        slug,
-        price,
-        sale_price,
-        description,
-        category,
-        type,
-        companyId,
-        isActive,
-        stock,
-        productAttribute,
-        isStatus, // Explicitly destructure isStatus
-      } = req.body;
-  
-      console.log("req.body:", req.body);
-  
-      // Fetch the existing product
-      const existingProduct = await productSchema.findById(id);
-  
-      console.log("Existing Product:", existingProduct);
-  
-      if (!existingProduct) {
-        return res
-          .status(404)
-          .json({ message: "Product not found", success: false, error: true });
-      }
-  
-      // Prepare the update data
-      const updateData = {
-        ...(name && { name }),
-        ...(slug && { slug }),
-        ...(price && { price }),
-        ...(sale_price && { sale_price }),
-        ...(description && { description }),
-        ...(isStatus && { isStatus }), // Add isStatus if it exists in the request
-        ...(category && { category }),
-        ...(type && { type }),
-        ...(companyId && { companyId }),
-        ...(isActive !== undefined && { isActive }),
-        ...(stock && { stock }),
-        ...(productAttribute && {
-          productAttribute: {
-            ...existingProduct.productAttribute,
-            ...productAttribute,
-          },
-        }),
-      };
-  
-      console.log("Update Data:", updateData);
-  
-      // Perform the update
-      const updatedProduct = await productSchema.findByIdAndUpdate(id, updateData, {
-        new: true,
-        runValidators: true,
-      });
-  
-      if (!updatedProduct) {
-        return res
-          .status(404)
-          .json({ message: "Product not found after update", success: false });
-      }
-  
-      res.status(200).json({
-        message: "Product updated successfully",
-        success: true,
-        data: updatedProduct,
-      });
-    } catch (error) {
-      console.error("Error updating product:", error);
-      res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-  };
-  
+        const id = req.params.id;
+        const userId = req.user?.userId;
 
-  
+        if (!id) {
+            return res.status(400).json({ message: "ID not provided" });
+        }
+
+        // Validate the ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid product ID" });
+        }
+
+        console.log("Provided ID:", id);
+
+        // Destructure fields from request body
+        const {
+            name,
+            slug,
+            price,
+            sale_price,
+            description,
+            category,
+            type,
+            companyId,
+            isActive,
+            stock,
+            productAttribute,
+            isStatus, 
+        } = req.body;
+
+        console.log("req.body:", req.body);
+
+
+        const existingProduct = await productSchema.findById(id);
+        if (!existingProduct) {
+            return res.status(404).json({
+                message: "Product not found",
+                success: false,
+                error: true
+            });
+        }
+
+        console.log("Existing Product:", existingProduct);
+
+
+        let company = null;
+        let updatedCompanyName = existingProduct.companyName; 
+
+        if (existingProduct.companyId) {  
+            company = await vendorSchema.findById(existingProduct.companyId);
+        }
+
+        if ((!updatedCompanyName || updatedCompanyName === null) && company) {
+            updatedCompanyName = company.company_name;
+        }
+
+        // Prepare the update data
+        const updateData = {
+            ...(name && { name }),
+            ...(slug && { slug }),
+            ...(price && { price }),
+            ...(sale_price && { sale_price }),
+            ...(description && { description }),
+            ...(isStatus && { isStatus }),
+            ...(category && { category }),
+            ...(type && { type }),
+            ...(companyId && { companyId }),
+            ...(isActive !== undefined && { isActive }),
+            ...(stock && { stock }),
+            ...(updatedCompanyName && { companyName: updatedCompanyName }), // ✅ Ensure company_name is updated
+            ...(productAttribute && {
+                productAttribute: {
+                    ...existingProduct.productAttribute,
+                    ...productAttribute,
+                },
+            }),
+        };
+
+        console.log("Update Data:", updateData);
+
+        // Perform the update
+        const updatedProduct = await productSchema.findByIdAndUpdate(id, updateData, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!updatedProduct) {
+            return res.status(404).json({
+                message: "Product not found after update",
+                success: false
+            });
+        }
+
+        res.status(200).json({
+            message: "Product updated successfully",
+            success: true,
+            data: updatedProduct,
+        });
+
+    } catch (error) {
+        console.error("Error updating product:", error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
 
 const deleteVarint = async( req, res) =>{
     try{

@@ -1,4 +1,5 @@
 const categorySchema = require('../models/category');
+const productSchema = require("../models/product")
 
 const addCategory = async (req, res) => {
     try {
@@ -136,6 +137,48 @@ const viwaAllData = async (req, res) => {
 };
 
 
+const categoryProducts = async(req,res) => {
+    try {
+        const id = req.parms.id;
+
+        console.log("id", id);
+
+        if(!slug){
+            return res.status(400).json({
+                message:"caegory slug is misssing",
+                success: false,
+                error: true,
+            })
+        }
+
+       const products = await productSchema.find({category:id});
+
+       if(!products){
+        return res.status(404).json({
+            message:" category products not found",
+            success: false,
+            error: true,
+        })
+       }
+
+       return res.status(200).json({
+        message:"category products ",
+        success: true,
+        error: false,
+        data: products,
+       })
+    }
+    catch(error){
+        console.log("error", error);
+        return res.status(500).json({
+            message:"internal server error",
+            success: false,
+            error: true,
+        })
+    }
+}
+
+
 
 
 module.exports = {
@@ -143,5 +186,6 @@ module.exports = {
     viewcategory,
     deletecategory,
     updateCategory,
-    viwaAllData
+    viwaAllData,
+    categoryProducts,
 };

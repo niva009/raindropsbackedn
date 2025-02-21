@@ -1,6 +1,6 @@
 const userSchema = require("../models/userregistration");
 const loginSchema = require("../models/login")
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcryptjs');
 const VendorSchema = require('../models/vendorregistration')
 const nodemailer = require("nodemailer");
 const jwt = require('jsonwebtoken'); 

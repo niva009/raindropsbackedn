@@ -11,8 +11,6 @@ const cartRouter = require('../Router/cartRouter');
 const addressRouter = require('../Router/addressRouter');
 const couponRouter = require('../Router/couponRouter');
 const orderRouter = require('../Router/orderRouter');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJSDoc = require('swagger-jsdoc');
 const authRoute = require('../Router/googleAuthRoutes');
 const locationRoute = require('../Router/userLocation');
 const smsRouter = require('../Router/smsRouter');
@@ -43,26 +41,6 @@ app.get('/', (req, res) => {
   res.send('Server running correctly');
 });
 
-// Swagger Configuration
-const swaggerOptions = {
-  swaggerDefinition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'API Documentation',
-      description: 'List of API endpoints for the application',
-      version: '1.0.0',
-    },
-    servers: [
-      {
-        url: '/api',
-      },
-    ],
-  },
-  apis: ['./Router/userrouter.js', './Router/categoryrouter.js', './Router/productrouter.js', './Router/wishlistrouter.js'], 
-};
-
-const swaggerDocs = swaggerJSDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Routers
 app.use('/api/auth', authRoute);
